@@ -15,10 +15,7 @@ def breit_wigner(E, Er, Gamma, fr):
     返回:
         float or numpy.ndarray: 共振截面(mb)
     """
-    # TODO: 在此实现Breit-Wigner公式 (约1行代码)
     return fr * (Gamma**2 / 4) / ((E - Er)**2 + (Gamma**2 / 4))
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
 
 def fit_without_errors(energy, cross_section):
     """
@@ -33,16 +30,20 @@ def fit_without_errors(energy, cross_section):
             - popt (array): 拟合参数 [Er, Gamma, fr]
             - pcov (2D array): 参数的协方差矩阵
     """
-    # 初始猜测值
+    # 优化初始猜测值，更接近真实值
     Er_guess = 75.0
     Gamma_guess = 50.0
-    fr_guess = 10000.0
+    fr_guess = max(cross_section) * 4  # 根据数据调整初始强度
     
-    # TODO: 使用curve_fit进行拟合 (约1行代码)
-    popt, pcov = curve_fit(breit_wigner, energy, cross_section, p0=[Er_guess, Gamma_guess, fr_guess])
+    # 使用curve_fit进行拟合，添加边界约束
+    popt, pcov = curve_fit(
+        breit_wigner, 
+        energy, 
+        cross_section, 
+        p0=[Er_guess, Gamma_guess, fr_guess],
+        bounds=([0, 0, 0], [200, 200, 100000])  # 设置合理的参数边界
+    )
     return popt, pcov
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
 
 def fit_with_errors(energy, cross_section, errors):
     """
@@ -58,16 +59,22 @@ def fit_with_errors(energy, cross_section, errors):
             - popt (array): 拟合参数 [Er, Gamma, fr]
             - pcov (2D array): 参数的协方差矩阵
     """
-    # 初始猜测值
+    # 优化初始猜测值
     Er_guess = 75.0
     Gamma_guess = 50.0
-    fr_guess = 10000.0
+    fr_guess = max(cross_section) * 4  # 根据数据调整初始强度
     
-    # TODO: 使用curve_fit进行拟合，考虑误差 (约1行代码)
-    popt, pcov = curve_fit(breit_wigner, energy, cross_section, sigma=errors, absolute_sigma=True, p0=[Er_guess, Gamma_guess, fr_guess])
+    # 使用curve_fit进行拟合，考虑误差和边界约束
+    popt, pcov = curve_fit(
+        breit_wigner, 
+        energy, 
+        cross_section, 
+        sigma=errors, 
+        absolute_sigma=True,
+        p0=[Er_guess, Gamma_guess, fr_guess],
+        bounds=([0, 0, 0], [200, 200, 100000])  # 设置合理的参数边界
+    )
     return popt, pcov
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
 
 def plot_fit_results(energy, cross_section, errors, popt, pcov, title):
     """
