@@ -12,9 +12,9 @@ def load_bacterial_data(file_path):
     返回:
         tuple: 包含时间和酶活性测量值的元组
     """
-    # TODO: 实现数据加载功能 (大约3行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
+    data = np.loadtxt(file_path)
+    t = data[:, 0]
+    activity = data[:, 1]
     return t, activity
 
 def V_model(t, tau):
@@ -28,10 +28,7 @@ def V_model(t, tau):
     返回:
         float or numpy.ndarray: V(t)模型值
     """
-    # TODO: 根据V(t) = 1 - e^(-t/τ)实现模型函数 (1行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
-    return result
+    return 1 - np.exp(-t / tau)
 
 def W_model(t, A, tau):
     """
@@ -45,10 +42,7 @@ def W_model(t, A, tau):
     返回:
         float or numpy.ndarray: W(t)模型值
     """
-    # TODO: 根据W(t) = A(e^(-t/τ) - 1 + t/τ)实现模型函数 (1行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
-    return result
+    return A * (np.exp(-t / tau) - 1 + t / tau)
 
 def fit_model(t, data, model_func, p0):
     """
@@ -63,9 +57,7 @@ def fit_model(t, data, model_func, p0):
     返回:
         tuple: 拟合参数及其协方差矩阵
     """
-    # TODO: 使用scipy.optimize.curve_fit进行拟合 (1行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
+    popt, pcov = curve_fit(model_func, t, data, p0=p0)
     return popt, pcov
 
 def plot_results(t, data, model_func, popt, title):
@@ -79,9 +71,20 @@ def plot_results(t, data, model_func, popt, title):
         popt (numpy.ndarray): 拟合参数
         title (str): 图表标题
     """
-    # TODO: 实现绘图功能 (约10行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
+    plt.figure(figsize=(10, 6))
+    plt.scatter(t, data, color='blue', label='Experimental Data')
+    
+    t_fit = np.linspace(min(t), max(t), 1000)
+    plt.plot(t_fit, model_func(t_fit, *popt), 'r-', 
+             label=f'Fit: {model_func.__name__}')
+    
+    plt.xlabel('Time')
+    plt.ylabel('Activity')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     # 加载数据
