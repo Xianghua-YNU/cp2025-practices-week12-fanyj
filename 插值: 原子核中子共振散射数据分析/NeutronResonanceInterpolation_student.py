@@ -20,11 +20,11 @@ def lagrange_interpolation(x, x_data, y_data):
         插值结果
     """
     x = np.asarray(x)
-    result = np.zeros_like(x)
+    result = np.zeros_like(x, dtype=float)  # 明确指定数据类型为float
     
     for i in range(len(x_data)):
         # 计算拉格朗日基函数 Li(x)
-        Li = np.ones_like(x, dtype=float)  # 明确指定数据类型为float
+        Li = np.ones_like(x, dtype=float) 
         for j in range(len(x_data)):
             if i != j:
                 Li *= (x - x_data[j]) / (x_data[i] - x_data[j])
