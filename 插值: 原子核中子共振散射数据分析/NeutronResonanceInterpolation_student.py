@@ -18,15 +18,19 @@ def lagrange_interpolation(x, x_data, y_data):
         
     返回:
         插值结果
-        
-    提示:
-        1. 使用拉格朗日插值公式实现
-        2. 考虑使用双重循环结构
-        3. 注意处理分母为零的情况
     """
-    # TODO: 在此实现拉格朗日插值算法 (大约10-15行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
+    x = np.asarray(x)
+    result = np.zeros_like(x)
+    
+    for i in range(len(x_data)):
+        # 计算拉格朗日基函数 Li(x)
+        Li = np.ones_like(x)
+        for j in range(len(x_data)):
+            if i != j:
+                Li *= (x - x_data[j]) / (x_data[i] - x_data[j])
+        # 累加基函数乘以对应y值
+        result += y_data[i] * Li
+    
     return result
 
 def cubic_spline_interpolation(x, x_data, y_data):
@@ -40,16 +44,10 @@ def cubic_spline_interpolation(x, x_data, y_data):
         
     返回:
         插值结果
-        
-    提示:
-        1. 使用scipy.interpolate.interp1d
-        2. 设置kind='cubic'
-        3. 考虑边界条件处理
     """
-    # TODO: 在此实现三次样条插值 (大约2-3行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
-    return result
+    # 使用scipy的interp1d函数实现三次样条插值
+    f = interp1d(x_data, y_data, kind='cubic', bounds_error=False, fill_value="extrapolate")
+    return f(x)
 
 def find_peak(x, y):
     """
@@ -61,15 +59,40 @@ def find_peak(x, y):
         
     返回:
         tuple: (峰值位置, FWHM)
-        
-    提示:
-        1. 使用np.argmax找到峰值位置
-        2. 计算半高位置
-        3. 使用np.argmin找到半高位置
     """
-    # TODO: 在此实现共振峰分析 (大约5-8行代码)
-    # [STUDENT_CODE_HERE]
-    raise NotImplementedError("请在 {} 中实现此函数".format(__file__))
+    # 找到峰值位置
+    peak_idx = np.argmax(y)
+    peak_x = x[peak_idx]
+    peak_y = y[peak_idx]
+    
+    # 计算半高
+    half_max = peak_y / 2
+    
+    # 寻找半高对应的左右位置
+    # 左边：找到最后一个小于等于half_max的点
+    left_idx = np.where(y[:peak_idx] <= half_max)[0]
+    left_idx = left_idx[-1] if len(left_idx) > 0 else 0
+    
+    # 右边：找到第一个小于等于half_max的点
+    right_idx = np.where(y[peak_idx:] <= half_max)[0]
+    right_idx = right_idx[0] + peak_idx if len(right_idx) > 0 else len(y) - 1
+    
+    # 线性插值获取更准确的半高位置
+    if left_idx < peak_idx and y[left_idx] < half_max < y[left_idx + 1]:
+        t = (half_max - y[left_idx]) / (y[left_idx + 1] - y[left_idx])
+        left_x = x[left_idx] + t * (x[left_idx + 1] - x[left_idx])
+    else:
+        left_x = x[left_idx]
+        
+    if right_idx > peak_idx and y[right_idx - 1] > half_max > y[right_idx]:
+        t = (half_max - y[right_idx]) / (y[right_idx - 1] - y[right_idx])
+        right_x = x[right_idx] + t * (x[right_idx - 1] - x[right_idx])
+    else:
+        right_x = x[right_idx]
+    
+    # 计算FWHM
+    fwhm = right_x - left_x
+    
     return peak_x, fwhm
 
 def plot_results():
@@ -105,6 +128,15 @@ def plot_results():
     
     plt.axvline(lagrange_peak, color='blue', linestyle=':', alpha=0.5)
     plt.axvline(spline_peak, color='orange', linestyle=':', alpha=0.5)
+    
+    # 在峰值线上标注峰值能量和FWHM
+    plt.text(lagrange_peak, max(lagrange_result) * 0.9, 
+             f'Lagrange: E={lagrange_peak:.1f} MeV\nFWHM={lagrange_fwhm:.1f} MeV', 
+             ha='center', va='top', rotation=90, backgroundcolor='w', alpha=0.7)
+    
+    plt.text(spline_peak, max(spline_result) * 0.9, 
+             f'Spline: E={spline_peak:.1f} MeV\nFWHM={spline_fwhm:.1f} MeV', 
+             ha='center', va='top', rotation=90, backgroundcolor='w', alpha=0.7)
     
     # 图表装饰
     plt.xlabel('Energy (MeV)')
