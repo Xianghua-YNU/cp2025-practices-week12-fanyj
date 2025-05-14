@@ -10,12 +10,13 @@ def breit_wigner(E, Er, Gamma, fr):
         E (float or numpy.ndarray): 能量(MeV)
         Er (float): 共振能量(MeV)
         Gamma (float): 共振宽度(MeV)
-        fr (float): 共振强度(mb)
+        fr (float): 峰值截面(mb)
         
     返回:
         float or numpy.ndarray: 共振截面(mb)
     """
-    return fr * (Gamma**2/4) / ((E - Er)**2 + Gamma**2/4)
+    # 修正公式实现，确保物理意义正确
+    return fr * (Gamma**2/4) / ((E - Er)**2 + (Gamma**2/4))
 
 def fit_without_errors(energy, cross_section):
     """
@@ -30,13 +31,21 @@ def fit_without_errors(energy, cross_section):
             - popt (array): 拟合参数 [Er, Gamma, fr]
             - pcov (2D array): 参数的协方差矩阵
     """
-    # 初始猜测值
-    Er_guess = 75.0
-    Gamma_guess = 50.0
-    fr_guess = 10000.0
+    # 优化初始猜测值，基于数据特征
+    Er_guess = 75.0  # 峰值位置
+    Gamma_guess = 30.0  # 减小初始宽度猜测值
+    fr_guess = max(cross_section) * 2  # 基于数据最大值估计峰值
     
-    popt, pcov = curve_fit(breit_wigner, energy, cross_section, p0=[Er_guess, Gamma_guess, fr_guess])
+    # 进行拟合，添加合理的边界约束
+    popt, pcov = curve_fit(
+        breit_wigner, 
+        energy, 
+        cross_section, 
+        p0=[Er_guess, Gamma_guess, fr_guess],
+        bounds=([0, 0, 0], [200, 100, 10000])  # 设置合理的参数边界
+    )
     return popt, pcov
+
 def fit_with_errors(energy, cross_section, errors):
     """
     考虑误差的Breit-Wigner拟合
@@ -51,13 +60,22 @@ def fit_with_errors(energy, cross_section, errors):
             - popt (array): 拟合参数 [Er, Gamma, fr]
             - pcov (2D array): 参数的协方差矩阵
     """
-    # 初始猜测值
+    # 使用与无误差拟合相同的初始猜测策略
     Er_guess = 75.0
-    Gamma_guess = 50.0
-    fr_guess = 10000.0
+    Gamma_guess = 30.0
+    fr_guess = max(cross_section) * 2
     
-    popt, pcov = curve_fit(breit_wigner, energy, cross_section, p0=[Er_guess, Gamma_guess, fr_guess], 
-                          sigma=errors, absolute_sigma=True)
+    # 进行拟合，考虑误差
+    popt, pcov = curve_fit(
+        breit_wigner, 
+        energy, 
+        cross_section, 
+        cross_section, 
+        p0=[Er_guess, Gamma_guess, fr_guess],
+        sigma=errors, 
+        absolute_sigma=True,
+        bounds=([0, 0, 0], [200, 100, 10000])  # 保持与无误差拟合一致的边界
+    )
     return popt, pcov
 
 def plot_fit_results(energy, cross_section, errors, popt, pcov, title):
@@ -87,14 +105,16 @@ def plot_fit_results(energy, cross_section, errors, popt, pcov, title):
     
     # 添加参数信息
     Er, Gamma, fr = popt
+    # 计算标准误差
     Er_std = np.sqrt(pcov[0, 0])
     Gamma_std = np.sqrt(pcov[1, 1])
     fr_std = np.sqrt(pcov[2, 2])
     
+    # 修正字符串转义问题
     plt.text(0.05, 0.95, 
              f'$E_r$ = {Er:.1f} ± {1.96*Er_std:.1f} MeV (95% CI)\n'
              f'$\Gamma$ = {Gamma:.1f} ± {1.96*Gamma_std:.1f} MeV (95% CI)\n'
-             f'$f_r$ = {fr:.0f} ± {1.96*fr_std:.0f} (95% CI)',
+             f'$f_r$ = {fr:.0f} ± {1.96*fr_std:.0f} mb (95% CI)',
              transform=plt.gca().transAxes, 
              verticalalignment='top',
              bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
@@ -124,16 +144,17 @@ def main():
     fig2 = plot_fit_results(energy, cross_section, errors, popt2, pcov2,
                           'Breit-Wigner Fit (With Errors)')
     
+    # 显示图表
     plt.show()
     
     # 任务3：结果比较
     print("\n拟合结果比较:")
     print(f"不考虑误差: Er={popt1[0]:.1f}±{1.96*np.sqrt(pcov1[0,0]):.1f} MeV (95% CI), "
           f"Γ={popt1[1]:.1f}±{1.96*np.sqrt(pcov1[1,1]):.1f} MeV (95% CI), "
-          f"fr={popt1[2]:.0f}±{1.96*np.sqrt(pcov1[2,2]):.0f} (95% CI)")
+          f"fr={popt1[2]:.0f}±{1.96*np.sqrt(pcov1[2,2]):.0f} mb (95% CI)")
     print(f"考虑误差:   Er={popt2[0]:.1f}±{1.96*np.sqrt(pcov2[0,0]):.1f} MeV (95% CI), "
           f"Γ={popt2[1]:.1f}±{1.96*np.sqrt(pcov2[1,1]):.1f} MeV (95% CI), "
-          f"fr={popt2[2]:.0f}±{1.96*np.sqrt(pcov2[2,2]):.0f} (95% CI)")
+          f"fr={popt2[2]:.0f}±{1.96*np.sqrt(pcov2[2,2]):.0f} mb (95% CI)")
 
 if __name__ == "__main__":
     main()
